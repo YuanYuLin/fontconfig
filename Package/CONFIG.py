@@ -48,18 +48,6 @@ def MAIN_ENV(args):
     ops.exportEnv(ops.setEnv("PKG_CONFIG_LIBDIR", ops.path_join(iopc.getSdkPath(), "pkgconfig")))
     ops.exportEnv(ops.setEnv("PKG_CONFIG_SYSROOT_DIR", iopc.getSdkPath()))
 
-    cc_sysroot = ops.getEnv("CC_SYSROOT")
-    cflags = ""
-    cflags += " -I" + ops.path_join(cc_sysroot, 'usr/include')
-    cflags += " -I" + ops.path_join(iopc.getSdkPath(), 'usr/include/libz')
-
-    ldflags = ""
-    ldflags += " -L" + ops.path_join(cc_sysroot, 'lib')
-    ldflags += " -L" + ops.path_join(cc_sysroot, 'usr/lib')
-    ldflags += " -L" + ops.path_join(iopc.getSdkPath(), 'lib')
-
-    libs = ""
-    libs += " -lz "
     #ops.exportEnv(ops.setEnv("LDFLAGS", ldflags))
     #ops.exportEnv(ops.setEnv("CFLAGS", cflags))
     #ops.exportEnv(ops.setEnv("LIBS", libs))
@@ -88,16 +76,19 @@ def MAIN_CONFIGURE(args):
     set_global(args)
     cc_sysroot = ops.getEnv("CC_SYSROOT")
 
+    cflags = iopc.get_includes()
+    libs = iopc.get_libs()
+
     extra_conf = []
     extra_conf.append("--host=" + cc_host)
     extra_conf.append("V=1")
     #extra_conf.append("--enable-libxml2")
-    extra_conf.append("FREETYPE_CFLAGS=-I" + ops.path_join(iopc.getSdkPath(), 'usr/include/freetype/freetype2'))
-    extra_conf.append("FREETYPE_LIBS=-L" + ops.path_join(iopc.getSdkPath(), 'lib') + ' -lfreetype')
-    extra_conf.append("UUID_CFLAGS=-I" + ops.path_join(iopc.getSdkPath(), 'usr/include/libuuid'))
-    extra_conf.append("UUID_LIBS=-L" + ops.path_join(iopc.getSdkPath(), 'lib') + ' -luuid')
-    extra_conf.append('EXPAT_CFLAGS=-I' + ops.path_join(iopc.getSdkPath(), 'usr/include/libexpat'))
-    extra_conf.append('EXPAT_LIBS=-L' + ops.path_join(iopc.getSdkPath(), 'lib') + ' -lexpat')
+    extra_conf.append("FREETYPE_CFLAGS=" + cflags)
+    extra_conf.append("FREETYPE_LIBS=" + libs)
+    extra_conf.append("UUID_CFLAGS=" + cflags)
+    extra_conf.append("UUID_LIBS=" + libs)
+    extra_conf.append('EXPAT_CFLAGS=' + cflags)
+    extra_conf.append('EXPAT_LIBS=' + libs)
     #extra_conf.append('LIBXML_CFLAGS=-I' + ops.path_join(iopc.getSdkPath(), 'usr/include/libxml2'))
     #extra_conf.append('LIBXML_LIBS=-L' + ops.path_join(iopc.getSdkPath(), 'lib') + ' -lxml2')
     '''
@@ -136,13 +127,26 @@ def MAIN_BUILD(args):
 
     ops.mkdir(tmp_include_dir)
     ops.copyto(ops.path_join(install_tmp_dir, "usr/local/include/."), tmp_include_dir)
-    return False
+    return True
 
 def MAIN_INSTALL(args):
     set_global(args)
 
     iopc.installBin(args["pkg_name"], ops.path_join(ops.path_join(install_dir, "lib"), "."), "lib")
     iopc.installBin(args["pkg_name"], ops.path_join(tmp_include_dir, "."), dst_include_dir)
+
+    return False
+
+def MAIN_SDKENV(args):
+    set_global(args)
+
+    cflags = ""
+    cflags += " -I" + ops.path_join(iopc.getSdkPath(), 'usr/include/' + args["pkg_name"])
+    iopc.add_includes(cflags)
+
+    libs = ""
+    libs += " -lfontconfig"
+    iopc.add_libs(libs)
 
     return False
 
